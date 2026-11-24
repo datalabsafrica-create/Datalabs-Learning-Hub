@@ -1,0 +1,37 @@
+
+name: Build Datalabs Learning Hub
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Android App Bundle
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:bundleRelease
+
+      - name: Save AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: datalabs-learning-hub
+          path: app/build/outputs/bundle/release/*.aab
+          
