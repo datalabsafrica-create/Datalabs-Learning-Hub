@@ -230,21 +230,28 @@ class MainViewModel(
 
   private fun bootstrapSession() {
     viewModelScope.launch(Dispatchers.IO) {
-      studentRepository.ensureUserProfileExists()
-      val admin = catalogRepository.checkIsAdmin(currentUserId)
-      _isAdmin.value = admin
-      if (admin) {
-        _isSeedingCatalog.value = true
-        catalogSeeder.seedInitialCatalog(forceResync = false)
-          .onSuccess { count ->
-            if (count > 0) {
-              _uiMessage.tryEmit("Synced AI Academy & 5 complete courses with full lessons, quizzes, assignments & practice kits.")
+      try {
+        studentRepository.ensureUserProfileExists()
+        val admin = catalogRepository.checkIsAdmin(currentUserId)
+        _isAdmin.value = admin
+        if (admin) {
+          _isSeedingCatalog.value = true
+          catalogSeeder.seedInitialCatalog(forceResync = false)
+            .onSuccess { count ->
+              if (count > 0) {
+                _uiMessage.tryEmit("Synced AI Academy & 5 complete courses with full lessons, quizzes, assignments & practice kits.")
+              }
             }
-          }
-          .onFailure { e ->
-            Log.w(TAG, "Starter catalog check failed", e)
-            _uiMessage.tryEmit("Catalog sync issue: ${unwrapFirestoreMessage(e, "please retry from Home or Admin.")}")
-          }
+            .onFailure { e ->
+              Log.w(TAG, "Starter catalog check failed", e)
+              _uiMessage.tryEmit("Catalog sync issue: ${unwrapFirestoreMessage(e, "please retry from Home or Admin.")}")
+            }
+        }
+      } catch (e: CancellationException) {
+        throw e
+      } catch (t: Throwable) {
+        Log.e(TAG, "Session bootstrap failed", t)
+      } finally {
         _isSeedingCatalog.value = false
       }
     }

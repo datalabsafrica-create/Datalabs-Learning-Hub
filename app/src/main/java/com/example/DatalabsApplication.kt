@@ -30,6 +30,11 @@ class AppContainer(application: Application) {
   private val databaseId: String by lazy { app.getString(R.string.firestore_database_id) }
 
   val firestore: FirebaseFirestore by lazy {
+    runCatching {
+      if (FirebaseApp.getApps(app).isEmpty()) {
+        FirebaseApp.initializeApp(app)
+      }
+    }
     FirebaseFirestore.getInstance(databaseId).apply {
       runCatching {
         firestoreSettings = firestoreSettings {
@@ -68,17 +73,17 @@ class DatalabsApplication : Application() {
 
   override fun onCreate() {
     super.onCreate()
+    runCatching {
+      if (FirebaseApp.getApps(this).isEmpty()) {
+        FirebaseApp.initializeApp(this)
+      }
+    }.onFailure { t ->
+      Log.e("DatalabsApp", "Synchronous FirebaseApp initialization error", t)
+    }
     container = AppContainer(this)
-    // Pre-warm Firebase, App Check, and Remember-Me preferences on IO so MainActivity renders frame 1 immediately.
+    // Pre-warm App Check and Remember-Me preferences on IO so MainActivity renders frame 1 immediately.
     appScope.launch {
       try {
-        runCatching {
-          if (FirebaseApp.getApps(this@DatalabsApplication).isEmpty()) {
-            FirebaseApp.initializeApp(this@DatalabsApplication)
-          }
-        }.onFailure { t ->
-          Log.e("DatalabsApp", "FirebaseApp initialization error", t)
-        }
         configureAppCheck(this@DatalabsApplication, null)
 
         val firebaseAuth = runCatching { Firebase.auth }.getOrNull()
@@ -87,6 +92,8 @@ class DatalabsApplication : Application() {
           hasSignedInUser = hasUser,
           onSignOutRequired = { runCatching { firebaseAuth?.signOut() } }
         )
+      } catch (t: Throwable) {
+        Log.e("DatalabsApp", "Startup warmup error", t)
       } finally {
         startupWarmup.complete(Unit)
       }
