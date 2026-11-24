@@ -1,0 +1,6 @@
+{
+  "name": "Datalabs Learning Hub",
+  "description": "Multi-academy education platform powered by Datalabs Analytics for practical career, business, technology, and life skills.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

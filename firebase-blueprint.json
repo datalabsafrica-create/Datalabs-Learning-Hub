@@ -1,0 +1,474 @@
+{
+  "entities": {
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Authorized platform administrator registry.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "email", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Student or admin profile, goals, preferences, and learning stats.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "role": { "type": "string", "enum": ["STUDENT", "ADMIN"] },
+        "careerInterests": { "type": "array" },
+        "learningInterests": { "type": "array" },
+        "learningGoal": { "type": "string" },
+        "weeklyTargetHours": { "type": "integer" },
+        "streakDays": { "type": "integer" },
+        "totalLearningMinutes": { "type": "integer" },
+        "lastActivityDate": { "type": "string" },
+        "remindersEnabled": { "type": "boolean" },
+        "courseUpdatesEnabled": { "type": "boolean" },
+        "announcementsEnabled": { "type": "boolean" },
+        "achievementsEnabled": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fullName", "email", "role", "weeklyTargetHours", "streakDays", "totalLearningMinutes", "remindersEnabled", "courseUpdatesEnabled", "announcementsEnabled", "achievementsEnabled", "createdAt", "updatedAt"]
+    },
+    "Academy": {
+      "title": "Academy",
+      "description": "Database-driven academic school within Datalabs Learning Hub.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "shortName": { "type": "string" },
+        "description": { "type": "string" },
+        "iconKey": { "type": "string" },
+        "accentHex": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "displayOrder": { "type": "integer" },
+        "courseCount": { "type": "integer" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "shortName", "description", "iconKey", "accentHex", "displayOrder", "courseCount", "published", "createdAt", "updatedAt"]
+    },
+    "Instructor": {
+      "title": "Instructor",
+      "description": "Course instructor profile.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "title": { "type": "string" },
+        "bio": { "type": "string" },
+        "specialty": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "title", "bio", "specialty", "createdAt", "updatedAt"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Course catalog metadata.",
+      "type": "object",
+      "properties": {
+        "academyId": { "type": "string" },
+        "academyName": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "description": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "instructorName": { "type": "string" },
+        "level": { "type": "string", "enum": ["BEGINNER", "INTERMEDIATE", "ADVANCED"] },
+        "durationMinutes": { "type": "integer" },
+        "lessonCount": { "type": "integer" },
+        "accessTier": { "type": "string", "enum": ["FREE", "PREMIUM"] },
+        "priceUsd": { "type": "number" },
+        "priceUgx": { "type": "integer" },
+        "certificateAvailable": { "type": "boolean" },
+        "published": { "type": "boolean" },
+        "featured": { "type": "boolean" },
+        "enrollmentCount": { "type": "integer" },
+        "popularityScore": { "type": "integer" },
+        "whatYouWillLearn": { "type": "array" },
+        "prerequisites": { "type": "array" },
+        "formats": { "type": "array" },
+        "tags": { "type": "array" },
+        "coverUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["academyId", "academyName", "title", "subtitle", "description", "instructorId", "instructorName", "level", "durationMinutes", "lessonCount", "accessTier", "priceUsd", "priceUgx", "certificateAvailable", "published", "featured", "enrollmentCount", "popularityScore", "whatYouWillLearn", "prerequisites", "formats", "tags", "createdAt", "updatedAt"]
+    },
+    "Lesson": {
+      "title": "Lesson",
+      "description": "Course curriculum lesson outline.",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string" },
+        "academyId": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "orderIndex": { "type": "integer" },
+        "durationMinutes": { "type": "integer" },
+        "format": { "type": "string", "enum": ["VIDEO", "WRITTEN", "AUDIO", "SLIDES", "PDF", "TEMPLATE", "EXERCISE", "ASSIGNMENT", "QUIZ", "PROJECT"] },
+        "freePreview": { "type": "boolean" },
+        "premiumOnly": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "academyId", "title", "summary", "orderIndex", "durationMinutes", "format", "freePreview", "premiumOnly", "createdAt", "updatedAt"]
+    },
+    "LessonContent": {
+      "title": "LessonContent",
+      "description": "Entitlement-gated lesson media, written notes, and downloadable resources.",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string" },
+        "freePreview": { "type": "boolean" },
+        "premiumOnly": { "type": "boolean" },
+        "notesMarkdown": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "slidesText": { "type": "string" },
+        "downloadTitle": { "type": "string" },
+        "downloadUrl": { "type": "string" },
+        "downloadContent": { "type": "string" },
+        "exercisePrompt": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "freePreview", "premiumOnly", "notesMarkdown", "createdAt", "updatedAt"]
+    },
+    "Enrollment": {
+      "title": "Enrollment",
+      "description": "Student enrollment and course-level progress tracking.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "academyId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "status": { "type": "string", "enum": ["ACTIVE", "COMPLETED"] },
+        "progressPercent": { "type": "integer" },
+        "completedLessonsCount": { "type": "integer" },
+        "totalLessonsCount": { "type": "integer" },
+        "lastLessonId": { "type": "string" },
+        "lastLessonTitle": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "courseId", "academyId", "courseTitle", "status", "progressPercent", "completedLessonsCount", "totalLessonsCount", "createdAt", "updatedAt"]
+    },
+    "LessonProgress": {
+      "title": "LessonProgress",
+      "description": "Per-lesson completion, bookmark, playback resume position, and student notes.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "lessonId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "bookmarked": { "type": "boolean" },
+        "lastPositionSeconds": { "type": "integer" },
+        "playbackSpeed": { "type": "number" },
+        "studentNotes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "courseId", "lessonId", "completed", "bookmarked", "lastPositionSeconds", "playbackSpeed", "studentNotes", "createdAt", "updatedAt"]
+    },
+    "LearningPath": {
+      "title": "LearningPath",
+      "description": "Structured multi-course career or skill pathway.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "academyId": { "type": "string" },
+        "targetRole": { "type": "string" },
+        "courseIds": { "type": "array" },
+        "courseTitles": { "type": "array" },
+        "estimatedHours": { "type": "integer" },
+        "premiumOnly": { "type": "boolean" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "academyId", "targetRole", "courseIds", "courseTitles", "estimatedHours", "premiumOnly", "published", "createdAt", "updatedAt"]
+    },
+    "LearningPathProgress": {
+      "title": "LearningPathProgress",
+      "description": "Student progress across a structured learning path.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "pathId": { "type": "string" },
+        "pathTitle": { "type": "string" },
+        "completedCourseIds": { "type": "array" },
+        "progressPercent": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "pathId", "pathTitle", "completedCourseIds", "progressPercent", "createdAt", "updatedAt"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "Course assessment or quiz with configurable passing score and retake policy.",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string" },
+        "lessonId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "passingScorePercent": { "type": "integer" },
+        "maxAttempts": { "type": "integer" },
+        "allowRetakes": { "type": "boolean" },
+        "questionsJson": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "title", "description", "passingScorePercent", "maxAttempts", "allowRetakes", "questionsJson", "createdAt", "updatedAt"]
+    },
+    "QuizAttempt": {
+      "title": "QuizAttempt",
+      "description": "Immutable student assessment attempt record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "quizId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "scorePercent": { "type": "integer" },
+        "earnedPoints": { "type": "integer" },
+        "totalPoints": { "type": "integer" },
+        "passed": { "type": "boolean" },
+        "attemptNumber": { "type": "integer" },
+        "answersSummary": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "quizId", "courseId", "scorePercent", "earnedPoints", "totalPoints", "passed", "attemptNumber", "answersSummary", "createdAt"]
+    },
+    "Assignment": {
+      "title": "Assignment",
+      "description": "Practical assignment or portfolio project definition.",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string" },
+        "title": { "type": "string" },
+        "instructions": { "type": "string" },
+        "deliverableFormat": { "type": "string" },
+        "maxPoints": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "title", "instructions", "deliverableFormat", "maxPoints", "createdAt", "updatedAt"]
+    },
+    "AssignmentSubmission": {
+      "title": "AssignmentSubmission",
+      "description": "Student submission for a practical assignment.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "assignmentId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "submissionText": { "type": "string" },
+        "attachmentUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["SUBMITTED", "REVIEWED"] },
+        "feedback": { "type": "string" },
+        "score": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "assignmentId", "courseId", "submissionText", "status", "createdAt", "updatedAt"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Verified Datalabs Learning Hub completion certificate.",
+      "type": "object",
+      "properties": {
+        "certificateCode": { "type": "string" },
+        "userId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "academyName": { "type": "string" },
+        "issuedDateText": { "type": "string" },
+        "verificationUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["VALID", "REVOKED"] },
+        "issuedBy": { "type": "string", "enum": ["SYSTEM_COMPLETION", "ADMIN"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["certificateCode", "userId", "studentName", "courseId", "courseTitle", "academyName", "issuedDateText", "verificationUrl", "status", "issuedBy", "createdAt"]
+    },
+    "SubscriptionPlan": {
+      "title": "SubscriptionPlan",
+      "description": "Configurable monthly and annual subscription plan pricing for international and Ugandan users.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "billingCycle": { "type": "string", "enum": ["MONTHLY", "ANNUAL"] },
+        "priceUsd": { "type": "number" },
+        "priceUgx": { "type": "integer" },
+        "description": { "type": "string" },
+        "features": { "type": "array" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "billingCycle", "priceUsd", "priceUgx", "description", "features", "active", "createdAt", "updatedAt"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "User subscription status and entitlement record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "planId": { "type": "string" },
+        "planName": { "type": "string" },
+        "billingCycle": { "type": "string", "enum": ["MONTHLY", "ANNUAL", "NONE"] },
+        "currency": { "type": "string", "enum": ["USD", "UGX"] },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["ACTIVE", "PENDING_PAYMENT", "EXPIRED", "CANCELLED"] },
+        "paymentProvider": { "type": "string", "enum": ["NONE", "STRIPE", "MTN_MOMO", "AIRTEL_MONEY", "ADMIN_GRANT"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "planId", "planName", "billingCycle", "currency", "amount", "status", "paymentProvider", "createdAt", "updatedAt"]
+    },
+    "SavedCourse": {
+      "title": "SavedCourse",
+      "description": "Bookmarked course saved by a student.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "academyId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "courseId", "courseTitle", "academyId", "createdAt"]
+    },
+    "NotificationItem": {
+      "title": "NotificationItem",
+      "description": "User notification for reminders, course updates, certificates, and announcements.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "type": { "type": "string", "enum": ["REMINDER", "COURSE_UPDATE", "NEW_COURSE", "ACADEMY_ANNOUNCEMENT", "SUBSCRIPTION", "ACHIEVEMENT", "CERTIFICATE"] },
+        "targetRoute": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "body", "type", "read", "createdAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Platform-wide academy and course announcements from admins.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "category": { "type": "string" },
+        "academyId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "published": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "message", "category", "published", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Authorized admin registry."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Student and admin user profiles."
+    },
+    "/academies/{academyId}": {
+      "schema": { "$ref": "#/entities/Academy" },
+      "description": "Database-driven academy catalog."
+    },
+    "/instructors/{instructorId}": {
+      "schema": { "$ref": "#/entities/Instructor" },
+      "description": "Instructor profiles."
+    },
+    "/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "Course catalog metadata."
+    },
+    "/lessons/{lessonId}": {
+      "schema": { "$ref": "#/entities/Lesson" },
+      "description": "Course syllabus lessons."
+    },
+    "/lessonContents/{lessonId}": {
+      "schema": { "$ref": "#/entities/LessonContent" },
+      "description": "Entitlement-gated lesson notes, media links, and downloadable resources."
+    },
+    "/enrollments/{enrollmentId}": {
+      "schema": { "$ref": "#/entities/Enrollment" },
+      "description": "Student course enrollments keyed as {userId}_{courseId}."
+    },
+    "/lessonProgress/{progressId}": {
+      "schema": { "$ref": "#/entities/LessonProgress" },
+      "description": "Student per-lesson progress keyed as {userId}_{lessonId}."
+    },
+    "/learningPaths/{pathId}": {
+      "schema": { "$ref": "#/entities/LearningPath" },
+      "description": "Structured multi-course learning paths."
+    },
+    "/learningPathProgress/{progressId}": {
+      "schema": { "$ref": "#/entities/LearningPathProgress" },
+      "description": "Student learning path progress keyed as {userId}_{pathId}."
+    },
+    "/quizzes/{quizId}": {
+      "schema": { "$ref": "#/entities/Quiz" },
+      "description": "Course quizzes and final assessments."
+    },
+    "/quizAttempts/{attemptId}": {
+      "schema": { "$ref": "#/entities/QuizAttempt" },
+      "description": "Student quiz attempts."
+    },
+    "/assignments/{assignmentId}": {
+      "schema": { "$ref": "#/entities/Assignment" },
+      "description": "Practical assignments and projects."
+    },
+    "/assignments/{assignmentId}/submissions/{userId}": {
+      "schema": { "$ref": "#/entities/AssignmentSubmission" },
+      "description": "Student assignment submissions."
+    },
+    "/certificates/{certificateId}": {
+      "schema": { "$ref": "#/entities/Certificate" },
+      "description": "Issued completion certificates."
+    },
+    "/subscriptionPlans/{planId}": {
+      "schema": { "$ref": "#/entities/SubscriptionPlan" },
+      "description": "Admin-managed monthly and annual subscription plans."
+    },
+    "/subscriptions/{userId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "Student subscription status and backend entitlement source."
+    },
+    "/savedCourses/{savedId}": {
+      "schema": { "$ref": "#/entities/SavedCourse" },
+      "description": "Bookmarked courses keyed as {userId}_{courseId}."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/NotificationItem" },
+      "description": "User learning reminders and update notifications."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Platform-wide announcements."
+    }
+  }
+}
