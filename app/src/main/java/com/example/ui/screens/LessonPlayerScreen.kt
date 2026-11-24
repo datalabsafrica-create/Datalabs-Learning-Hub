@@ -465,6 +465,7 @@ fun LessonPlayerScreen(
 
       if (!content.caseStudyText.isNullOrBlank()) {
         Card(
+          modifier = Modifier.testTag("lesson_case_study_card"),
           border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
           colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
         ) {
@@ -474,9 +475,9 @@ fun LessonPlayerScreen(
           ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
               Icon(Icons.Filled.BusinessCenter, contentDescription = null, tint = ElectricBlue, modifier = Modifier.size(18.dp))
-              Text("Real-World Case Study", style = MaterialTheme.typography.titleSmall, color = ElectricBlue, fontWeight = FontWeight.Bold)
+              Text("Illustrative Case Study", style = MaterialTheme.typography.titleSmall, color = ElectricBlue, fontWeight = FontWeight.Bold)
             }
-            Text(content.caseStudyText, style = MaterialTheme.typography.bodyMedium)
+            FormattedNotesBlock(markdown = content.caseStudyText)
           }
         }
       }

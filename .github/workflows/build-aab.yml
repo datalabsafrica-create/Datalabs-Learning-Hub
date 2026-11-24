@@ -1,0 +1,100 @@
+name: Build Signed Release AAB
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-aab:
+    name: Build Release Android App Bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK Licenses
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Ensure Gradle Wrapper Is Executable
+        shell: bash
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            echo "::error::Missing ./gradlew at repository root."
+            exit 1
+          fi
+          chmod +x ./gradlew
+
+      - name: Configure Firebase google-services.json
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 --decode > app/google-services.json
+          elif [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+          fi
+
+          if [ ! -s "app/google-services.json" ]; then
+            echo "::error::app/google-services.json is missing. Commit it or provide GOOGLE_SERVICES_JSON_BASE64 / GOOGLE_SERVICES_JSON in GitHub Secrets."
+            exit 1
+          fi
+
+      - name: Decode Release Upload Keystore
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Missing release signing secrets. Configure KEYSTORE_BASE64, STORE_PASSWORD, and KEY_PASSWORD in GitHub repository secrets (keyAlias must be 'upload')."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "${RUNNER_TEMP}/upload-keystore.jks"
+          echo "KEYSTORE_PATH=${RUNNER_TEMP}/upload-keystore.jks" >> "$GITHUB_ENV"
+
+      - name: Build Signed Release AAB
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
+
+      - name: Clean Up Temporary Keystore
+        if: always()
+        shell: bash
+        run: rm -f "${RUNNER_TEMP}/upload-keystore.jks"
+
+      - name: Upload Signed AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: datalabs-learning-hub-release-aab
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 30

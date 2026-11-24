@@ -85,14 +85,23 @@ class CourseContentBlueprintTest {
           )
           assertTrue(
             "Expected rich educational notes in ${lesson.title} (${lesson.notesMarkdown.length} chars)",
-            lesson.notesMarkdown.length in 1000..50000
+            lesson.notesMarkdown.length in 1800..50000
+          )
+          assertTrue(
+            "Expected ## Real-World Examples section in ${lesson.title}",
+            lesson.notesMarkdown.contains("## Real-World Examples")
           )
           assertTrue(lesson.slidesText.lines().size >= 5)
           assertTrue(lesson.downloadTitle.isNotBlank())
           assertTrue(lesson.downloadContent.isNotBlank())
           assertTrue(lesson.exercisePrompt.isNotBlank())
           assertTrue(lesson.keyTakeaways.isNotEmpty())
-          assertTrue(lesson.caseStudyText.isNotBlank())
+          assertTrue(
+            "Expected structured 4-part case study in ${lesson.title}",
+            lesson.caseStudyText.length in 250..5000 &&
+              lesson.caseStudyText.contains("**Setting:**") &&
+              lesson.caseStudyText.contains("**Measured Outcome:**")
+          )
         }
         assertTrue(curriculum.lessons.any { it.notesMarkdown.contains("|---") })
 
@@ -244,14 +253,14 @@ class CourseContentBlueprintTest {
         assertTrue(lesson.format in allowedLessonFormats)
         assertTrue(
           "Expected substantial teaching in ${lessonId} notesMarkdown (was ${lesson.notesMarkdown.length} chars)",
-          lesson.notesMarkdown.length in 1000..50000
+          lesson.notesMarkdown.length in 1800..50000
         )
         assertTrue(lesson.slidesText.length <= 20000)
         assertTrue(lesson.downloadTitle.length <= 200)
         assertTrue(lesson.downloadContent.length <= 30000)
         assertTrue(lesson.exercisePrompt.length <= 5000)
         assertTrue(lesson.keyTakeaways.size in 1..12 && lesson.keyTakeaways.all { it.length <= 300 })
-        assertTrue(lesson.caseStudyText.length in 20..5000)
+        assertTrue(lesson.caseStudyText.length in 250..5000)
       }
 
       // Module Quiz + Final Quiz parity with isValidQuiz

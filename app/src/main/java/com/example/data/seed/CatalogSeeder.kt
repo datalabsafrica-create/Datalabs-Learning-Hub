@@ -50,6 +50,17 @@ class CatalogSeeder(private val db: FirebaseFirestore) {
 
       if (!forceResync) {
         val singleAcademyDoc = existingAcademiesSnap.documents.singleOrNull()
+        val expectedLessonsById = existingLessonsSnap.documents.associateBy { it.id }
+        val expectedContentsById = existingContentsSnap.documents.associateBy { it.id }
+        val allLessonsInstructional = expectedLessonIds.all { lid ->
+          expectedLessonsById[lid]?.getString("format") in setOf("WRITTEN", "SLIDES")
+        }
+        val allContentsSubstantial = expectedLessonIds.all { lid ->
+          val contentDoc = expectedContentsById[lid]
+          val notesLen = contentDoc?.getString("notesMarkdown")?.length ?: 0
+          val caseLen = contentDoc?.getString("caseStudyText")?.length ?: 0
+          notesLen >= 1800 && caseLen >= 250
+        }
         val hasCompleteCurriculum =
           singleAcademyDoc != null &&
             singleAcademyDoc.id == AcademyCatalogDefinitions.ACTIVE_ACADEMY_ID &&
@@ -58,6 +69,8 @@ class CatalogSeeder(private val db: FirebaseFirestore) {
             existingCoursesSnap.documents.map { it.id }.toSet() == expectedCourseIds &&
             existingLessonsSnap.documents.map { it.id }.toSet().containsAll(expectedLessonIds) &&
             existingContentsSnap.documents.map { it.id }.toSet().containsAll(expectedLessonIds) &&
+            allLessonsInstructional &&
+            allContentsSubstantial &&
             existingQuizzesSnap.documents.map { it.id }.toSet().containsAll(expectedQuizIds) &&
             existingAssignmentsSnap.documents.map { it.id }.toSet().containsAll(expectedAssignmentIds) &&
             existingPathsSnap.documents.any { it.id == activePathId } &&

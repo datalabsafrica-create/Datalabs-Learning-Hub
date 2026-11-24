@@ -61,7 +61,7 @@ data class AcademyMasterySummary(
 object AcademyCatalogDefinitions {
 
   const val ACTIVE_ACADEMY_ID = "academy_ai"
-  const val CURRICULUM_VERSION = 3L
+  const val CURRICULUM_VERSION = 4L
   const val AI_SPECIALIZATION_COURSE_ID = "spec_academy_ai"
   const val AI_SPECIALIZATION_TITLE = "AI Academy Specialization: Practical AI & App Engineering"
 

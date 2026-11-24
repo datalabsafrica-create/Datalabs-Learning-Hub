@@ -1014,14 +1014,14 @@ private fun LessonCurriculumRow(
         Text(lesson.title, style = MaterialTheme.typography.titleSmall)
         Text(lesson.summary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         val formatLabel = when (lesson.format.uppercase()) {
-          "WRITTEN" -> "Written Lesson"
-          "SLIDES" -> "Interactive Slides"
-          "EXERCISE" -> "Lesson + Guided Lab"
-          "PROJECT" -> "Lesson + Capstone Guide"
+          "WRITTEN" -> "Teaching Guide & Examples"
+          "SLIDES" -> "Slides & Worked Examples"
+          "EXERCISE" -> "Teaching + Guided Lab"
+          "PROJECT" -> "Teaching + Capstone Guide"
           else -> lesson.format.lowercase().replaceFirstChar { it.uppercase() }
         }
         Text(
-          text = "$formatLabel • ${lesson.durationMinutes} min" + if (lesson.freePreview) " • Free Preview" else "",
+          text = "$formatLabel • Case Study • ${lesson.durationMinutes} min" + if (lesson.freePreview) " • Free Preview" else "",
           style = MaterialTheme.typography.labelSmall,
           color = if (lesson.freePreview) SuccessEmerald else MaterialTheme.colorScheme.onSurfaceVariant
         )
