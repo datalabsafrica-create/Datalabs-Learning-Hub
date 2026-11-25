@@ -68,6 +68,7 @@ import com.example.ui.screens.NotificationsScreen
 import com.example.ui.screens.ProfileScreen
 import com.example.ui.screens.QuizScreen
 import com.example.ui.screens.SubscriptionScreen
+import com.example.ui.screens.UserProfileScreen
 import com.example.ui.theme.NavyDeep
 import com.example.ui.viewmodel.MainViewModel
 import com.google.firebase.Firebase
@@ -337,7 +338,14 @@ private fun AuthenticatedAppShell(
                 isAdmin = isAdmin,
                 onOpenSubscription = { navController.navigate(SubscriptionRoute) },
                 onOpenAdmin = { navController.navigate(AdminDashboardRoute) },
-                onOpenNotifications = { navController.navigate(NotificationsRoute) }
+                onOpenNotifications = { navController.navigate(NotificationsRoute) },
+                onOpenUserProfile = { navController.navigate(UserProfileRoute) }
+              )
+            }
+
+            composable<UserProfileRoute> {
+              UserProfileScreen(
+                onBack = { navController.popBackStack() }
               )
             }
 

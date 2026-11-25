@@ -1,3 +1,24 @@
 <resources>
     <string name="app_name">Datalabs Learning Hub</string>
+    <string name="user_profile_title">Account Profile</string>
+    <string name="user_profile_back_description">Navigate back</string>
+    <string name="user_profile_refresh_description">Refresh Firebase profile</string>
+    <string name="user_profile_avatar_description">User profile photo</string>
+    <string name="user_profile_fallback_name">Datalabs Learner</string>
+    <string name="user_profile_fallback_email">No email available</string>
+    <string name="user_profile_verified">Verified</string>
+    <string name="user_profile_unverified">Unverified</string>
+    <string name="user_profile_details_heading">Firebase Account Details</string>
+    <string name="user_profile_display_name_label">Display Name</string>
+    <string name="user_profile_email_label">Email Address</string>
+    <string name="user_profile_status_label">Email Status</string>
+    <string name="user_profile_provider_label">Sign-In Provider</string>
+    <string name="user_profile_uid_label">User ID</string>
+    <string name="user_profile_member_since_label">Member Since</string>
+    <string name="user_profile_sign_out">Sign Out</string>
+    <string name="user_profile_signing_out">Signing Out...</string>
+    <string name="user_profile_signed_out_title">Not Signed In</string>
+    <string name="user_profile_signed_out_subtitle">Sign in with your Google account to view your Firebase Auth profile details.</string>
+    <string name="user_profile_sign_in_google">Sign in with Google</string>
+    <string name="user_profile_sync_cached_notice">Showing cached Firebase Auth details while offline.</string>
 </resources>

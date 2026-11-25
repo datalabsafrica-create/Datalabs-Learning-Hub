@@ -78,7 +78,8 @@ fun ProfileScreen(
   isAdmin: Boolean,
   onOpenSubscription: () -> Unit,
   onOpenAdmin: () -> Unit,
-  onOpenNotifications: () -> Unit
+  onOpenNotifications: () -> Unit,
+  onOpenUserProfile: () -> Unit = {}
 ) {
   if (studentState is UiState.Loading) {
     LoadingStateView("Loading profile...")
@@ -179,6 +180,13 @@ fun ProfileScreen(
               style = MaterialTheme.typography.labelSmall,
               color = Color(0xFF93C5FD)
             )
+          }
+          OutlinedButton(
+            onClick = onOpenUserProfile,
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+            modifier = Modifier.testTag("open_firebase_account_button")
+          ) {
+            Text("Account", color = Color.White)
           }
         }
       }

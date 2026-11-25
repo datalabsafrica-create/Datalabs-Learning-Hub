@@ -23,6 +23,98 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Configure Firebase google-services.json
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          WORKFLOW_EVENT_NAME: ${{ github.event_name }}
+          IS_FORK_PR: ${{ github.event.pull_request.head.repo.fork || false }}
+        run: |
+          set -euo pipefail
+
+          validate_google_services() {
+            local target_file="$1"
+            python3 - "$target_file" <<'PY'
+          import json
+          import sys
+
+          path = sys.argv[1]
+          try:
+              with open(path, "r", encoding="utf-8") as f:
+                  data = json.load(f)
+          except json.JSONDecodeError as e:
+              print(f"::error::{path} is not valid JSON (line {e.lineno}, column {e.colno}).")
+              sys.exit(1)
+          except Exception:
+              print(f"::error::Failed to read {path}.")
+              sys.exit(1)
+
+          if not isinstance(data, dict):
+              print(f"::error::{path} must contain a JSON object.")
+              sys.exit(1)
+
+          clients = data.get("client", [])
+          if not isinstance(clients, list):
+              print(f"::error::{path} has an invalid 'client' field.")
+              sys.exit(1)
+
+          packages = [
+              c.get("client_info", {}).get("android_client_info", {}).get("package_name")
+              for c in clients
+              if isinstance(c, dict)
+          ]
+          if "com.aistudio.datalabshub.k7m9xp" not in packages:
+              print(f"::error::{path} does not contain package com.aistudio.datalabshub.k7m9xp.")
+              sys.exit(1)
+          PY
+          }
+
+          mkdir -p app
+          TMP_GOOGLE_SERVICES="$(mktemp)"
+          trap 'rm -f "$TMP_GOOGLE_SERVICES"' EXIT
+
+          if [ -n "${GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
+            echo "GOOGLE_SERVICES_JSON_BASE64 is available. Decoding into app/google-services.json..."
+            if ! printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 --decode > "$TMP_GOOGLE_SERVICES" 2>/dev/null; then
+              echo "::error::Failed to decode GOOGLE_SERVICES_JSON_BASE64. Ensure the secret contains valid Base64."
+              exit 1
+            fi
+          elif [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
+            echo "GOOGLE_SERVICES_JSON_BASE64 is unset; falling back to GOOGLE_SERVICES_JSON."
+            printf '%s' "$GOOGLE_SERVICES_JSON" > "$TMP_GOOGLE_SERVICES"
+          else
+            echo "::warning::GOOGLE_SERVICES_JSON_BASE64 is empty or unavailable in this step (event='${WORKFLOW_EVENT_NAME:-unknown}', fork_pr='${IS_FORK_PR:-false}')."
+            echo "Troubleshooting: Ensure GOOGLE_SERVICES_JSON_BASE64 is saved under GitHub Repository Secrets (Settings -> Secrets and variables -> Actions -> Repository secrets), not only an Environment secret, and note that GitHub withholds secrets on forked pull requests."
+            if [ -s "app/google-services.json" ]; then
+              validate_google_services "app/google-services.json"
+              echo "Using existing valid app/google-services.json from repository."
+              exit 0
+            fi
+            echo "::error::app/google-services.json could not be generated because GOOGLE_SERVICES_JSON_BASE64 is unavailable in GitHub repository secrets and no committed app/google-services.json exists."
+            exit 1
+          fi
+
+          if [ ! -s "$TMP_GOOGLE_SERVICES" ]; then
+            echo "::error::Decoded Firebase configuration is empty."
+            exit 1
+          fi
+
+          validate_google_services "$TMP_GOOGLE_SERVICES"
+
+          if [ -s "app/google-services.json" ] && cmp -s "$TMP_GOOGLE_SERVICES" "app/google-services.json"; then
+            echo "app/google-services.json is already up to date and valid."
+            exit 0
+          fi
+
+          mv "$TMP_GOOGLE_SERVICES" app/google-services.json
+          chmod 600 app/google-services.json
+          if [ -n "${GITHUB_ENV:-}" ]; then
+            echo "GOOGLE_SERVICES_FROM_SECRET=true" >> "$GITHUB_ENV"
+          fi
+          test -s app/google-services.json
+          echo "Successfully generated and validated app/google-services.json."
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -103,91 +195,6 @@ jobs:
             exit 1
           fi
           chmod +x ./gradlew
-
-      - name: Configure Firebase google-services.json
-        shell: bash
-        env:
-          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          set -euo pipefail
-
-          validate_google_services() {
-            local target_file="$1"
-            python3 - "$target_file" <<'PY'
-          import json
-          import sys
-
-          path = sys.argv[1]
-          try:
-              with open(path, "r", encoding="utf-8") as f:
-                  data = json.load(f)
-          except json.JSONDecodeError as e:
-              print(f"::error::{path} is not valid JSON (line {e.lineno}, column {e.colno}).")
-              sys.exit(1)
-          except Exception:
-              print(f"::error::Failed to read {path}.")
-              sys.exit(1)
-
-          if not isinstance(data, dict):
-              print(f"::error::{path} must contain a JSON object.")
-              sys.exit(1)
-
-          clients = data.get("client", [])
-          if not isinstance(clients, list):
-              print(f"::error::{path} has an invalid 'client' field.")
-              sys.exit(1)
-
-          packages = [
-              c.get("client_info", {}).get("android_client_info", {}).get("package_name")
-              for c in clients
-              if isinstance(c, dict)
-          ]
-          if "com.aistudio.datalabshub.k7m9xp" not in packages:
-              print(f"::error::{path} does not contain package com.aistudio.datalabshub.k7m9xp.")
-              sys.exit(1)
-          PY
-          }
-
-          mkdir -p app
-
-          if [ -s "app/google-services.json" ]; then
-            if validate_google_services "app/google-services.json"; then
-              echo "Valid app/google-services.json already exists; skipping overwrite."
-              exit 0
-            else
-              echo "::warning::Existing app/google-services.json is invalid; attempting to restore from secret."
-            fi
-          fi
-
-          TMP_GOOGLE_SERVICES="$(mktemp)"
-          trap 'rm -f "$TMP_GOOGLE_SERVICES"' EXIT
-
-          if [ -n "${GOOGLE_SERVICES_JSON_BASE64:-}" ]; then
-            if ! printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 --decode > "$TMP_GOOGLE_SERVICES" 2>/dev/null; then
-              echo "::error::Failed to decode GOOGLE_SERVICES_JSON_BASE64. Ensure the secret contains valid Base64."
-              exit 1
-            fi
-          elif [ -n "${GOOGLE_SERVICES_JSON:-}" ]; then
-            printf '%s' "$GOOGLE_SERVICES_JSON" > "$TMP_GOOGLE_SERVICES"
-          else
-            echo "::error::app/google-services.json is missing. Add GOOGLE_SERVICES_JSON_BASE64 to GitHub repository secrets."
-            exit 1
-          fi
-
-          if [ ! -s "$TMP_GOOGLE_SERVICES" ]; then
-            echo "::error::Decoded Firebase configuration is empty."
-            exit 1
-          fi
-
-          validate_google_services "$TMP_GOOGLE_SERVICES"
-
-          mv "$TMP_GOOGLE_SERVICES" app/google-services.json
-          chmod 600 app/google-services.json
-          if [ -n "${GITHUB_ENV:-}" ]; then
-            echo "GOOGLE_SERVICES_FROM_SECRET=true" >> "$GITHUB_ENV"
-          fi
-          echo "Successfully configured and validated app/google-services.json."
 
       - name: Decode Release Upload Keystore
         shell: bash

@@ -17,3 +17,4 @@ import kotlinx.serialization.Serializable
 @Serializable data object NotificationsRoute
 @Serializable data object AdminDashboardRoute
 @Serializable data object CareerHubRoute
+@Serializable data object UserProfileRoute
