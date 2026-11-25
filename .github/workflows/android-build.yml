@@ -25,12 +25,35 @@ jobs:
           java-version: "21"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: true
+          packages: |
+            platform-tools
+            platforms;android-36.1
+            platforms;android-36
+            build-tools;36.0.0
 
-      - name: Accept Android SDK Licenses
+      - name: Ensure Android Command-Line Tools in PATH and Accept SDK Licenses
         shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+          if [ -n "$SDK_ROOT" ]; then
+            export ANDROID_SDK_ROOT="$SDK_ROOT"
+            export ANDROID_HOME="$SDK_ROOT"
+            if [ -d "$SDK_ROOT/cmdline-tools/latest/bin" ]; then
+              CMDLINE_BIN="$SDK_ROOT/cmdline-tools/latest/bin"
+            else
+              CMDLINE_BIN="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 2 -type d -name bin 2>/dev/null | sort | head -n 1)"
+            fi
+            if [ -n "$CMDLINE_BIN" ]; then
+              export PATH="$CMDLINE_BIN:$SDK_ROOT/platform-tools:$PATH"
+              [ -n "${GITHUB_PATH:-}" ] && echo "$CMDLINE_BIN" >> "$GITHUB_PATH"
+              [ -n "${GITHUB_PATH:-}" ] && echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+            fi
+          fi
+          command -v sdkmanager
+          yes | sdkmanager --licenses
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
