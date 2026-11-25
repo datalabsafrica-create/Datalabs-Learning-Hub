@@ -52,14 +52,34 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | tr -d '[:space:]' | base64 --decode > app/google-services.json
+            echo "GOOGLE_SERVICES_FROM_SECRET=true" >> "$GITHUB_ENV"
           elif [ -n "$GOOGLE_SERVICES_JSON" ]; then
             printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
+            echo "GOOGLE_SERVICES_FROM_SECRET=true" >> "$GITHUB_ENV"
           fi
 
           if [ ! -s "app/google-services.json" ]; then
-            echo "::error::app/google-services.json is missing. Commit it or configure GOOGLE_SERVICES_JSON_BASE64 / GOOGLE_SERVICES_JSON in GitHub Secrets."
+            echo "::error::app/google-services.json is missing. Add GOOGLE_SERVICES_JSON_BASE64 (or GOOGLE_SERVICES_JSON) to GitHub repository secrets."
             exit 1
           fi
+
+          python3 - <<'PY'
+          import json, sys
+          try:
+              with open("app/google-services.json", "r", encoding="utf-8") as f:
+                  data = json.load(f)
+          except Exception as e:
+              print(f"::error::app/google-services.json is not valid JSON: {e}")
+              sys.exit(1)
+          clients = data.get("client", [])
+          packages = [
+              c.get("client_info", {}).get("android_client_info", {}).get("package_name")
+              for c in clients
+          ]
+          if "com.aistudio.datalabshub.k7m9xp" not in packages:
+              print("::error::app/google-services.json does not contain package com.aistudio.datalabshub.k7m9xp.")
+              sys.exit(1)
+          PY
 
       - name: Decode Release Upload Keystore
         shell: bash
@@ -81,10 +101,14 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew :app:bundleRelease
 
-      - name: Clean Up Temporary Keystore
+      - name: Clean Up Temporary Secret Files
         if: always()
         shell: bash
-        run: rm -f "${RUNNER_TEMP}/upload-keystore.jks"
+        run: |
+          rm -f "${RUNNER_TEMP}/upload-keystore.jks"
+          if [ "${GOOGLE_SERVICES_FROM_SECRET:-false}" = "true" ]; then
+            rm -f app/google-services.json
+          fi
 
       - name: Save AAB artifact
         uses: actions/upload-artifact@v4
