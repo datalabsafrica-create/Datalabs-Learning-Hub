@@ -433,6 +433,7 @@ fun MyLearningScreen(
               isSaved = savedIds.contains(course.id),
               hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
               progressPercent = enrollment.progressPercent,
+              ratingSummary = catalog.ratingSummaries[course.id],
               onClick = { onOpenCourse(course.id) },
               onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) }
             )
@@ -491,6 +492,7 @@ fun MyLearningScreen(
             course = course,
             isSaved = true,
             hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
+            ratingSummary = catalog.ratingSummaries[course.id],
             onClick = { onOpenCourse(course.id) },
             onToggleSave = { onToggleSaveCourse(course, true) }
           )
@@ -513,6 +515,7 @@ fun MyLearningScreen(
             course = course,
             isSaved = savedIds.contains(course.id),
             hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
+            ratingSummary = catalog.ratingSummaries[course.id],
             onClick = { onOpenCourse(course.id) },
             onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) }
           )

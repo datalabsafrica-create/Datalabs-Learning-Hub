@@ -11,6 +11,8 @@ import com.example.data.model.AssignmentSubmission
 import com.example.data.model.Certificate
 import com.example.data.model.Course
 import com.example.data.model.CoursePurchase
+import com.example.data.model.CourseRatingHelper
+import com.example.data.model.CourseReview
 import com.example.data.model.Enrollment
 import com.example.data.model.Instructor
 import com.example.data.model.LearningPath
@@ -184,6 +186,123 @@ class CatalogRepository(
         }
         .logAndRethrow(OperationType.LIST, "announcements")
     )
+  }
+
+  fun observeCourseReviews(): Flow<List<CourseReview>> = flow {
+    requireUserId()
+    emitAll(
+      db.collection("courseReviews")
+        .snapshots()
+        .map { snap ->
+          snap.toObjects(CourseReview::class.java, ServerTimestampBehavior.ESTIMATE)
+            .sortedByDescending { it.updatedAt?.seconds ?: it.createdAt?.seconds ?: 0L }
+        }
+        .logAndRethrow(OperationType.LIST, "courseReviews")
+    )
+  }
+
+  fun observeReviewsForCourse(courseId: String): Flow<List<CourseReview>> = flow {
+    requireUserId()
+    emitAll(
+      db.collection("courseReviews")
+        .whereEqualTo("courseId", courseId)
+        .snapshots()
+        .map { snap ->
+          snap.toObjects(CourseReview::class.java, ServerTimestampBehavior.ESTIMATE)
+            .sortedByDescending { it.updatedAt?.seconds ?: it.createdAt?.seconds ?: 0L }
+        }
+        .logAndRethrow(OperationType.LIST, "courseReviews")
+    )
+  }
+
+  suspend fun submitCourseReview(
+    courseId: String,
+    rating: Int,
+    reviewText: String,
+    fallbackUserName: String? = null
+  ): Result<Unit> {
+    if (courseId.isBlank()) {
+      return Result.failure(IllegalArgumentException("Invalid course selection."))
+    }
+    if (rating !in CourseRatingHelper.MIN_RATING..CourseRatingHelper.MAX_RATING) {
+      return Result.failure(IllegalArgumentException("Please select a rating between 1 and 5 stars."))
+    }
+    val cleanReviewText = reviewText.trim()
+    if (cleanReviewText.length > CourseRatingHelper.MAX_REVIEW_LENGTH) {
+      return Result.failure(
+        IllegalArgumentException("Review must be ${CourseRatingHelper.MAX_REVIEW_LENGTH} characters or less.")
+      )
+    }
+
+    val uid = try {
+      requireUserId()
+    } catch (e: Exception) {
+      return Result.failure(e)
+    }
+    val reviewId = "${uid}_${courseId}"
+    val path = "courseReviews/$reviewId"
+    val rawName = auth?.currentUser?.displayName?.trim()?.takeIf { it.length >= 2 }
+      ?: fallbackUserName?.trim()?.takeIf { it.length >= 2 }
+      ?: auth?.currentUser?.email?.substringBefore("@")?.trim()?.takeIf { it.length >= 2 }
+      ?: "Datalabs Learner"
+    val safeAuthorName = rawName.take(120)
+
+    var isUpdate = false
+    return try {
+      val ref = db.collection("courseReviews").document(reviewId)
+      val existing = ref.get().await()
+      if (existing.exists()) {
+        isUpdate = true
+        ref.update(
+          mapOf(
+            "rating" to rating.toLong(),
+            "reviewText" to cleanReviewText,
+            "userName" to safeAuthorName,
+            "updatedAt" to FieldValue.serverTimestamp()
+          )
+        ).await()
+      } else {
+        ref.set(
+          mapOf(
+            "userId" to uid,
+            "userName" to safeAuthorName,
+            "courseId" to courseId,
+            "rating" to rating.toLong(),
+            "reviewText" to cleanReviewText,
+            "createdAt" to FieldValue.serverTimestamp(),
+            "updatedAt" to FieldValue.serverTimestamp()
+          )
+        ).await()
+      }
+      Result.success(Unit)
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      handleFirestoreError(e, if (isUpdate) OperationType.UPDATE else OperationType.CREATE, path)
+      Result.failure(e)
+    }
+  }
+
+  suspend fun deleteCourseReview(courseId: String): Result<Unit> {
+    if (courseId.isBlank()) {
+      return Result.failure(IllegalArgumentException("Invalid course selection."))
+    }
+    val uid = try {
+      requireUserId()
+    } catch (e: Exception) {
+      return Result.failure(e)
+    }
+    val reviewId = "${uid}_${courseId}"
+    val path = "courseReviews/$reviewId"
+    return try {
+      db.collection("courseReviews").document(reviewId).delete().await()
+      Result.success(Unit)
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      handleFirestoreError(e, OperationType.DELETE, path)
+      Result.failure(e)
+    }
   }
 
   suspend fun getLessonContent(lessonId: String): Result<LessonContent> {

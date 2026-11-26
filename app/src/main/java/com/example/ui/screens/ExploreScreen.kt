@@ -379,6 +379,7 @@ fun ExploreScreen(
               isCompared = compareCourseIds.contains(course.id),
               hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
               progressPercent = enrollmentMap[course.id]?.progressPercent,
+              ratingSummary = catalog.ratingSummaries[course.id],
               onClick = { onOpenCourse(course.id) },
               onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) },
               onToggleCompare = { onToggleCompare(course.id) }

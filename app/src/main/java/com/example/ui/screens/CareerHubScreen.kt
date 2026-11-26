@@ -595,6 +595,7 @@ fun CareerHubScreen(
             isSaved = savedIds.contains(course.id),
             hasSubscription = unlocked,
             progressPercent = enrollmentByCourse[course.id]?.progressPercent,
+            ratingSummary = catalog.ratingSummaries[course.id],
             onClick = { onOpenCourse(course.id) },
             onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) }
           )

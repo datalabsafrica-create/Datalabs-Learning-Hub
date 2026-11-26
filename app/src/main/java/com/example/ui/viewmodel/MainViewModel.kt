@@ -28,6 +28,9 @@ import com.example.data.model.Certificate
 import com.example.data.model.Course
 import com.example.data.model.CourseCertificationPolicy
 import com.example.data.model.CoursePurchase
+import com.example.data.model.CourseRatingHelper
+import com.example.data.model.CourseRatingSummary
+import com.example.data.model.CourseReview
 import com.example.data.model.Enrollment
 import com.example.data.model.Instructor
 import com.example.data.model.LearningPath
@@ -74,7 +77,9 @@ data class HubCatalogSnapshot(
   val learningPaths: List<LearningPath> = emptyList(),
   val instructors: List<Instructor> = emptyList(),
   val announcements: List<Announcement> = emptyList(),
-  val plans: List<SubscriptionPlan> = emptyList()
+  val plans: List<SubscriptionPlan> = emptyList(),
+  val courseReviews: List<CourseReview> = emptyList(),
+  val ratingSummaries: Map<String, CourseRatingSummary> = emptyMap()
 )
 
 data class StudentDataSnapshot(
@@ -163,7 +168,8 @@ class MainViewModel(
     catalogRepository.observeLearningPaths(),
     catalogRepository.observeInstructors(),
     catalogRepository.observeAnnouncements(),
-    catalogRepository.observeSubscriptionPlans()
+    catalogRepository.observeSubscriptionPlans(),
+    catalogRepository.observeCourseReviews()
   ) { values ->
     @Suppress("UNCHECKED_CAST")
     val activeAcademyId = AcademyCatalogDefinitions.ACTIVE_ACADEMY_ID
@@ -186,13 +192,16 @@ class MainViewModel(
     val activeAnnouncements = (values[4] as List<Announcement>).filter { ann ->
       ann.academyId.isNullOrBlank() || ann.academyId == activeAcademyId
     }
+    val activeReviews = (values[6] as List<CourseReview>).filter { it.courseId in activeCourseIds }
     HubCatalogSnapshot(
       academies = activeAcademies,
       courses = activeCourses,
       learningPaths = activePaths,
       instructors = activeInstructors,
       announcements = activeAnnouncements,
-      plans = values[5] as List<SubscriptionPlan>
+      plans = values[5] as List<SubscriptionPlan>,
+      courseReviews = activeReviews,
+      ratingSummaries = CourseRatingHelper.summarizeByCourse(activeReviews)
     )
   }.toUiStateFlow("catalogue")
 
@@ -409,6 +418,47 @@ class MainViewModel(
 
   fun observeAssignments(courseId: String): Flow<List<Assignment>> =
     catalogRepository.observeAssignmentsForCourse(courseId)
+
+  fun observeCourseReviews(courseId: String): Flow<List<CourseReview>> =
+    catalogRepository.observeReviewsForCourse(courseId)
+
+  fun submitCourseReview(
+    course: Course,
+    rating: Int,
+    reviewText: String,
+    onDone: (Boolean) -> Unit = {}
+  ) {
+    val student = (studentState.value as? UiState.Success)?.data
+    val fallbackName = student?.profile?.fullName
+    viewModelScope.launch {
+      catalogRepository.submitCourseReview(
+        courseId = course.id,
+        rating = rating,
+        reviewText = reviewText,
+        fallbackUserName = fallbackName
+      ).onSuccess {
+        _uiMessage.tryEmit("Saved your ${rating}-star review for ${course.title}.")
+        onDone(true)
+      }.onFailure { e ->
+        _uiMessage.tryEmit(unwrapFirestoreMessage(e, "Unable to save course review"))
+        onDone(false)
+      }
+    }
+  }
+
+  fun deleteCourseReview(course: Course, onDone: (Boolean) -> Unit = {}) {
+    viewModelScope.launch {
+      catalogRepository.deleteCourseReview(course.id)
+        .onSuccess {
+          _uiMessage.tryEmit("Removed your review for ${course.title}.")
+          onDone(true)
+        }
+        .onFailure { e ->
+          _uiMessage.tryEmit(unwrapFirestoreMessage(e, "Unable to remove review"))
+          onDone(false)
+        }
+    }
+  }
 
   suspend fun loadLessonContent(lessonId: String): Result<LessonContent> =
     catalogRepository.getLessonContent(lessonId)

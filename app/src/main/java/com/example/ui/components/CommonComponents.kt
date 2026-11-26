@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.WorkOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -54,11 +56,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.R
 import com.example.data.model.Academy
 import com.example.data.model.Course
+import com.example.data.model.CourseRatingHelper
+import com.example.data.model.CourseRatingSummary
 import com.example.data.model.LearningPath
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.NavyDeep
@@ -226,6 +232,7 @@ fun CourseCard(
   isCompared: Boolean = false,
   hasSubscription: Boolean = false,
   progressPercent: Long? = null,
+  ratingSummary: CourseRatingSummary? = null,
   onClick: () -> Unit,
   onToggleSave: (() -> Unit)? = null,
   onToggleCompare: (() -> Unit)? = null,
@@ -287,6 +294,44 @@ fun CourseCard(
         maxLines = 2,
         overflow = TextOverflow.Ellipsis
       )
+
+      val activeSummary = ratingSummary?.takeIf { it.reviewCount > 0 }
+      Row(
+        modifier = Modifier.testTag("course_card_rating_${course.id}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
+        Icon(
+          imageVector = if (activeSummary != null) Icons.Filled.Star else Icons.Filled.StarBorder,
+          contentDescription = if (activeSummary != null) {
+            "Average rating ${CourseRatingHelper.formatAverage(activeSummary)} out of 5"
+          } else {
+            stringResource(R.string.course_rating_no_reviews)
+          },
+          tint = if (activeSummary != null) WarningGold else MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.size(16.dp)
+        )
+        if (activeSummary != null) {
+          val reviewWord = if (activeSummary.reviewCount == 1) "review" else "reviews"
+          Text(
+            text = CourseRatingHelper.formatAverage(activeSummary),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+          )
+          Text(
+            text = "(${activeSummary.reviewCount} $reviewWord)",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        } else {
+          Text(
+            text = stringResource(R.string.course_rating_no_reviews),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+          )
+        }
+      }
 
       Row(
         modifier = Modifier.fillMaxWidth(),

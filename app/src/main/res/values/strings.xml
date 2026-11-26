@@ -21,4 +21,19 @@
     <string name="user_profile_signed_out_subtitle">Sign in with your Google account to view your Firebase Auth profile details.</string>
     <string name="user_profile_sign_in_google">Sign in with Google</string>
     <string name="user_profile_sync_cached_notice">Showing cached Firebase Auth details while offline.</string>
+    <string name="home_search_placeholder">Search courses by title, category, or skill level...</string>
+    <string name="home_search_clear_description">Clear search and filters</string>
+    <string name="home_filter_clear_all">Reset</string>
+    <string name="home_filter_empty_title">No matching courses</string>
+    <string name="home_filter_empty_description">No Firebase courses match your search, category, or skill level filter. Clear filters or browse all courses in Explore.</string>
+    <string name="home_filter_clear_action">Clear Filters</string>
+    <string name="course_rating_no_reviews">No reviews yet</string>
+    <string name="course_reviews_heading">Ratings &amp; Student Reviews</string>
+    <string name="course_reviews_rate_title">Rate &amp; Review This Course</string>
+    <string name="course_reviews_update_title">Update Your Review</string>
+    <string name="course_reviews_input_label">Share your experience with this course (optional)</string>
+    <string name="course_reviews_submit">Submit Review</string>
+    <string name="course_reviews_update">Update Review</string>
+    <string name="course_reviews_delete">Delete</string>
+    <string name="course_reviews_empty_list">No reviews yet. Share the first rating and review for this course.</string>
 </resources>

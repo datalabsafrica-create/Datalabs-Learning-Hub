@@ -369,6 +369,16 @@ service cloud.firestore {
              isValidTimestamp(data.createdAt);
     }
 
+    function isValidCourseReview(data) {
+      return data.userId is string && isValidId(data.userId) &&
+             data.userName is string && data.userName.size() >= 2 && data.userName.size() <= 120 &&
+             data.courseId is string && isValidId(data.courseId) &&
+             data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+             data.reviewText is string && data.reviewText.size() <= 2000 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
     // --- COLLECTION RULES ---
 
     match /admins/{userId} {
@@ -767,6 +777,29 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidId(announcementId) && isValidAnnouncement(incoming()) &&
                        incoming().createdAt == existing().createdAt;
       allow delete: if isAdmin() && isValidId(announcementId);
+    }
+
+    match /courseReviews/{reviewId} {
+      allow get: if isSignedIn() && isValidId(reviewId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(reviewId) && isValidCourseReview(incoming()) &&
+                       incoming().keys().hasAll(['userId', 'userName', 'courseId', 'rating', 'reviewText', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'userName', 'courseId', 'rating', 'reviewText', 'createdAt', 'updatedAt']) &&
+                       reviewId == (request.auth.uid + '_' + incoming().courseId) &&
+                       incoming().userId == request.auth.uid &&
+                       exists(/databases/$(database)/documents/courses/$(incoming().courseId));
+      allow update: if isSignedIn() && isValidId(reviewId) && isValidCourseReview(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().courseId == existing().courseId &&
+                       incoming().createdAt == existing().createdAt && (
+        isAdmin() || (
+          existing().userId == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'reviewText', 'userName', 'updatedAt'])
+        )
+      );
+      allow delete: if isSignedIn() && isValidId(reviewId) && (
+        existing().userId == request.auth.uid || isAdmin()
+      );
     }
   }
 }

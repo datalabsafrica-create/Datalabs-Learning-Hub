@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -71,9 +72,12 @@ import com.example.data.model.Assignment
 import com.example.data.model.AssignmentSubmission
 import com.example.data.model.Course
 import com.example.data.model.CourseCertificationPolicy
+import com.example.data.model.CourseRatingHelper
+import com.example.data.model.CourseRatingSummary
 import com.example.data.model.Lesson
 import com.example.data.model.Quiz
 import com.example.data.model.UiState
+import com.example.ui.components.CourseReviewsSection
 import com.example.ui.components.EmptyStateCard
 import com.example.ui.components.ErrorStateCard
 import com.example.ui.components.LoadingStateView
@@ -152,6 +156,10 @@ fun CourseDetailScreen(
 
   val quizzes by viewModel.observeQuizzes(courseId).collectAsStateWithLifecycle(initialValue = emptyList())
   val assignments by viewModel.observeAssignments(courseId).collectAsStateWithLifecycle(initialValue = emptyList())
+  val courseReviews = remember(catalog.courseReviews, courseId) {
+    catalog.courseReviews.filter { it.courseId == courseId }
+  }
+  val ratingSummary = catalog.ratingSummaries[courseId] ?: CourseRatingSummary()
   val primaryAssignment = assignments.firstOrNull()
   val primarySubmission by remember(primaryAssignment?.id) {
     primaryAssignment?.let { viewModel.observeMyAssignmentSubmission(it.id) } ?: flowOf(null)
@@ -252,6 +260,32 @@ fun CourseDetailScreen(
                       text = "Certificate Included",
                       style = MaterialTheme.typography.labelSmall,
                       color = Color.White
+                    )
+                  }
+                }
+              }
+              if (ratingSummary.reviewCount > 0) {
+                Surface(
+                  color = Color.White.copy(alpha = 0.14f),
+                  shape = RoundedCornerShape(6.dp),
+                  modifier = Modifier.testTag("hero_course_rating_badge")
+                ) {
+                  Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                  ) {
+                    Icon(
+                      imageVector = Icons.Filled.Star,
+                      contentDescription = null,
+                      tint = WarningGold,
+                      modifier = Modifier.size(13.dp)
+                    )
+                    Text(
+                      text = "${CourseRatingHelper.formatAverage(ratingSummary)} (${ratingSummary.reviewCount})",
+                      style = MaterialTheme.typography.labelSmall,
+                      color = Color.White,
+                      fontWeight = FontWeight.Bold
                     )
                   }
                 }
@@ -785,6 +819,22 @@ fun CourseDetailScreen(
             }
           }
         }
+      }
+
+      // Course Ratings & Reviews Section
+      item {
+        CourseReviewsSection(
+          course = course,
+          reviews = courseReviews,
+          ratingSummary = ratingSummary,
+          currentUserId = viewModel.currentUserId,
+          onSubmitReview = { rating, text, onDone ->
+            viewModel.submitCourseReview(course, rating, text, onDone)
+          },
+          onDeleteReview = { onDone ->
+            viewModel.deleteCourseReview(course, onDone)
+          }
+        )
       }
     }
   }

@@ -63,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.data.model.Course
+import com.example.data.model.CourseRatingSummary
 import com.example.data.model.UiState
 import com.example.data.seed.AcademyMasterySummary
 import com.example.data.seed.AcademyProgressionHelper
@@ -477,6 +478,7 @@ fun AcademyDetailScreen(
             accentColor = accent,
             isSaved = savedIds.contains(node.course.id),
             hasAccess = hasSubscription || unlockedCourseIds.contains(node.course.id),
+            ratingSummary = catalog.ratingSummaries[node.course.id],
             onOpenCourse = { onOpenCourse(node.course.id) },
             onToggleSave = { onToggleSaveCourse(node.course, savedIds.contains(node.course.id)) },
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -610,6 +612,7 @@ private fun ProgressionCourseStageRow(
   accentColor: Color,
   isSaved: Boolean,
   hasAccess: Boolean,
+  ratingSummary: CourseRatingSummary?,
   onOpenCourse: () -> Unit,
   onToggleSave: () -> Unit,
   modifier: Modifier = Modifier
@@ -718,6 +721,7 @@ private fun ProgressionCourseStageRow(
       isSaved = isSaved,
       hasSubscription = hasAccess,
       progressPercent = node.enrollment?.progressPercent,
+      ratingSummary = ratingSummary,
       onClick = onOpenCourse,
       onToggleSave = onToggleSave
     )

@@ -493,3 +493,52 @@ sealed interface AiAssistantUiState {
   data class Error(val message: String) : AiAssistantUiState
 }
 
+@Keep
+@IgnoreExtraProperties
+data class CourseReview(
+  @DocumentId val id: String = "",
+  val userId: String = "",
+  val userName: String = "",
+  val courseId: String = "",
+  val rating: Long = 5L,
+  val reviewText: String = "",
+  @ServerTimestamp val createdAt: Timestamp? = null,
+  @ServerTimestamp val updatedAt: Timestamp? = null
+)
+
+data class CourseRatingSummary(
+  val averageRating: Double = 0.0,
+  val reviewCount: Int = 0
+)
+
+object CourseRatingHelper {
+  const val MIN_RATING = 1
+  const val MAX_RATING = 5
+  const val MAX_REVIEW_LENGTH = 2000
+
+  fun summarizeByCourse(reviews: List<CourseReview>): Map<String, CourseRatingSummary> {
+    if (reviews.isEmpty()) return emptyMap()
+    return reviews
+      .filter { it.courseId.isNotBlank() && it.rating in MIN_RATING.toLong()..MAX_RATING.toLong() }
+      .groupBy { it.courseId }
+      .mapValues { (_, courseReviews) -> summarizeCourse(courseReviews) }
+  }
+
+  fun summarizeCourse(reviews: List<CourseReview>): CourseRatingSummary {
+    val valid = reviews.filter { it.rating in MIN_RATING.toLong()..MAX_RATING.toLong() }
+    if (valid.isEmpty()) return CourseRatingSummary()
+    val avg = valid.map { it.rating.toDouble() }.average()
+    val rounded = kotlin.math.round(avg * 10.0) / 10.0
+    return CourseRatingSummary(
+      averageRating = rounded,
+      reviewCount = valid.size
+    )
+  }
+
+  fun formatAverage(summary: CourseRatingSummary): String {
+    if (summary.reviewCount <= 0) return ""
+    return String.format(java.util.Locale.US, "%.1f", summary.averageRating)
+  }
+}
+
+

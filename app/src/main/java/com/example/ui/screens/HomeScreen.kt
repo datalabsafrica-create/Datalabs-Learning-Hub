@@ -40,8 +40,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,6 +71,8 @@ import com.example.ui.components.AcademyCard
 import com.example.ui.components.CourseCard
 import com.example.ui.components.EmptyStateCard
 import com.example.ui.components.ErrorStateCard
+import com.example.ui.components.HomeCourseFilter
+import com.example.ui.components.HomeSearchFilterBar
 import com.example.ui.components.LearningPathCard
 import com.example.ui.components.LoadingStateView
 import com.example.ui.components.academyIconFor
@@ -102,6 +103,8 @@ fun HomeScreen(
   onSyncStarterCatalog: () -> Unit
 ) {
   var searchQuery by remember { mutableStateOf("") }
+  var selectedCategoryFilter by remember { mutableStateOf<String?>(null) }
+  var selectedLevelFilter by remember { mutableStateOf<String?>(null) }
 
   when {
     catalogState is UiState.Loading || isSeedingCatalog -> {
@@ -177,20 +180,41 @@ fun HomeScreen(
       .take(8)
   }
 
-  val searchMatches = remember(searchQuery, publishedCourses, publishedAcademies) {
-    val q = searchQuery.trim().lowercase()
-    if (q.isBlank()) null
+  val availableCategories = remember(publishedCourses) {
+    HomeCourseFilter.extractCategories(publishedCourses)
+  }
+  val availableSkillLevels = remember(publishedCourses) {
+    HomeCourseFilter.extractSkillLevels(publishedCourses)
+  }
+
+  val isFilteringCourses = searchQuery.isNotBlank() ||
+    selectedCategoryFilter != null ||
+    selectedLevelFilter != null
+
+  val filterResults = remember(
+    searchQuery,
+    selectedCategoryFilter,
+    selectedLevelFilter,
+    isFilteringCourses,
+    publishedCourses,
+    publishedAcademies
+  ) {
+    if (!isFilteringCourses) null
     else {
-      val matchingAcademies = publishedAcademies.filter {
-        it.name.lowercase().contains(q) || it.description.lowercase().contains(q)
+      val q = searchQuery.trim().lowercase()
+      val matchingAcademies = if (q.isBlank()) {
+        emptyList()
+      } else {
+        publishedAcademies.filter {
+          it.name.lowercase().contains(q) || it.description.lowercase().contains(q)
+        }
       }
-      val matchingCourses = publishedCourses.filter {
-        it.title.lowercase().contains(q) ||
-          it.academyName.lowercase().contains(q) ||
-          it.instructorName.lowercase().contains(q) ||
-          it.tags.any { tag -> tag.lowercase().contains(q) } ||
-          it.description.lowercase().contains(q)
-      }
+      val matchingCourses = HomeCourseFilter.filterCourses(
+        courses = publishedCourses,
+        query = searchQuery,
+        selectedCategory = selectedCategoryFilter,
+        selectedLevel = selectedLevelFilter
+      )
       matchingAcademies to matchingCourses
     }
   }
@@ -313,38 +337,57 @@ fun HomeScreen(
       }
     }
 
-    // 2. Search Bar
+    // 2. Search Bar & Firebase Category / Skill Level Filters
     item {
-      OutlinedTextField(
-        value = searchQuery,
-        onValueChange = { searchQuery = it },
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 16.dp)
-          .testTag("home_search_input"),
-        placeholder = { Text("Search AI courses, skills, topics, instructors...") },
-        leadingIcon = {
-          Icon(imageVector = Icons.Filled.Search, contentDescription = "Search")
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(14.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-          focusedContainerColor = MaterialTheme.colorScheme.surface,
-          unfocusedContainerColor = MaterialTheme.colorScheme.surface
-        )
+      HomeSearchFilterBar(
+        searchQuery = searchQuery,
+        onSearchQueryChange = { searchQuery = it },
+        availableCategories = availableCategories,
+        selectedCategory = selectedCategoryFilter,
+        onSelectCategory = { selectedCategoryFilter = it },
+        availableLevels = availableSkillLevels,
+        selectedLevel = selectedLevelFilter,
+        onSelectLevel = { selectedLevelFilter = it },
+        onClearAll = {
+          searchQuery = ""
+          selectedCategoryFilter = null
+          selectedLevelFilter = null
+        }
       )
     }
 
     when {
-      // If user is searching right on Home, show instant filtered results
-      searchMatches != null -> {
-        val (matchedAcademies, matchedCourses) = searchMatches
+      // Show live filtered courses & academies from Firebase whenever search or filters are active
+      filterResults != null -> {
+        val (matchedAcademies, matchedCourses) = filterResults
+        val activeSummary = buildList {
+          selectedLevelFilter?.let { add(HomeCourseFilter.formatSkillLevelLabel(it)) }
+          selectedCategoryFilter?.let { add(it) }
+          if (searchQuery.isNotBlank()) add("\"${searchQuery.trim()}\"")
+        }.joinToString(" • ")
+
         item {
-          Text(
-            text = "Search Results (${matchedCourses.size} courses, ${matchedAcademies.size} academies)",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 16.dp)
-          )
+          Column(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+          ) {
+            Text(
+              text = if (matchedAcademies.isNotEmpty()) {
+                "Matching Courses (${matchedCourses.size}) & Academies (${matchedAcademies.size})"
+              } else {
+                "Filtered Courses (${matchedCourses.size})"
+              },
+              style = MaterialTheme.typography.titleMedium,
+              modifier = Modifier.testTag("home_filtered_results_header")
+            )
+            if (activeSummary.isNotBlank()) {
+              Text(
+                text = activeSummary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+              )
+            }
+          }
         }
         if (matchedAcademies.isNotEmpty()) {
           item {
@@ -369,15 +412,19 @@ fun HomeScreen(
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
               EmptyStateCard(
                 icon = Icons.Filled.Search,
-                title = "No matching courses",
-                description = "Try another keyword or open Explore to filter by academy, skill level, and tier.",
-                actionLabel = "Open Explore",
-                onAction = onOpenExplore
+                title = stringResource(R.string.home_filter_empty_title),
+                description = stringResource(R.string.home_filter_empty_description),
+                actionLabel = stringResource(R.string.home_filter_clear_action),
+                onAction = {
+                  searchQuery = ""
+                  selectedCategoryFilter = null
+                  selectedLevelFilter = null
+                }
               )
             }
           }
         } else {
-          items(matchedCourses.take(25), key = { it.id }) { course ->
+          items(matchedCourses, key = { it.id }) { course ->
             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
               CourseCard(
                 course = course,
@@ -385,6 +432,7 @@ fun HomeScreen(
                 isSaved = savedIds.contains(course.id),
                 hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
                 progressPercent = enrollmentByCourse[course.id]?.progressPercent,
+                ratingSummary = catalog.ratingSummaries[course.id],
                 onClick = { onOpenCourse(course.id) },
                 onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) }
               )
@@ -806,6 +854,7 @@ fun HomeScreen(
               isSaved = savedIds.contains(course.id),
               hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
               progressPercent = enrollmentByCourse[course.id]?.progressPercent,
+              ratingSummary = catalog.ratingSummaries[course.id],
               onClick = { onOpenCourse(course.id) },
               onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) },
               modifier = Modifier.width(300.dp)
@@ -834,6 +883,7 @@ fun HomeScreen(
               isSaved = savedIds.contains(course.id),
               hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
               progressPercent = enrollmentByCourse[course.id]?.progressPercent,
+              ratingSummary = catalog.ratingSummaries[course.id],
               onClick = { onOpenCourse(course.id) },
               onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) },
               modifier = Modifier.width(300.dp)
@@ -887,6 +937,7 @@ fun HomeScreen(
               isSaved = savedIds.contains(course.id),
               hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
               progressPercent = enrollmentByCourse[course.id]?.progressPercent,
+              ratingSummary = catalog.ratingSummaries[course.id],
               onClick = { onOpenCourse(course.id) },
               onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) },
               modifier = Modifier.width(290.dp)
@@ -927,6 +978,7 @@ fun HomeScreen(
             isSaved = savedIds.contains(course.id),
             hasSubscription = hasSubscription || unlockedCourseIds.contains(course.id),
             progressPercent = enrollmentByCourse[course.id]?.progressPercent,
+            ratingSummary = catalog.ratingSummaries[course.id],
             onClick = { onOpenCourse(course.id) },
             onToggleSave = { onToggleSaveCourse(course, savedIds.contains(course.id)) }
           )

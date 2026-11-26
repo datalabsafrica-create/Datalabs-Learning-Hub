@@ -546,3 +546,135 @@ test("AI Academy Specialization Certificate requires all 5 AI Academy courses CO
   // Now specialization certificate creation succeeds
   await assertSucceeds(aliceDb.collection("certificates").doc(specCertId).set(specPayload));
 });
+
+test("Course reviews enforce ownership, valid 1..5 rating bounds, existing course, and signed-in listing", async () => {
+  const unauthDb = testEnv.unauthenticatedContext().firestore();
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: "alice@example.com", email_verified: true }).firestore();
+  const bobDb = testEnv.authenticatedContext(BOB_UID, { email: "bob@example.com", email_verified: true }).firestore();
+  const ts = nowMinus(5000);
+
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().collection("courses").doc("course_sql_free").set({
+      academyId: "academy_ai",
+      academyName: "AI Academy",
+      title: "AI Foundations",
+      subtitle: "Core concepts",
+      description: "Foundational course",
+      instructorId: "inst_1",
+      instructorName: "Grace Okello",
+      level: "BEGINNER",
+      durationMinutes: 90,
+      lessonCount: 4,
+      accessTier: "FREE",
+      priceUsd: 0.0,
+      priceUgx: 0,
+      certificateAvailable: true,
+      published: true,
+      featured: true,
+      enrollmentCount: 0,
+      popularityScore: 0,
+      whatYouWillLearn: ["Core AI"],
+      prerequisites: ["None"],
+      formats: ["WRITTEN"],
+      tags: ["AI"],
+      createdAt: ts,
+      updatedAt: ts,
+    });
+  });
+
+  const aliceReviewId = `${ALICE_UID}_course_sql_free`;
+  const validPayload = {
+    userId: ALICE_UID,
+    userName: "Alice Namukasa",
+    courseId: "course_sql_free",
+    rating: 5,
+    reviewText: "Clear lessons and very practical exercises!",
+    createdAt: ts,
+    updatedAt: ts,
+  };
+
+  // Unauthenticated read/write fails
+  await assertFails(unauthDb.collection("courseReviews").get());
+  await assertFails(unauthDb.collection("courseReviews").doc(aliceReviewId).set(validPayload));
+
+  // Fails for non-existent course
+  await assertFails(
+    aliceDb.collection("courseReviews").doc(`${ALICE_UID}_missing_course`).set({
+      ...validPayload,
+      courseId: "missing_course",
+    })
+  );
+
+  // Fails if rating is outside 1..5 or non-integer
+  await assertFails(
+    aliceDb.collection("courseReviews").doc(aliceReviewId).set({
+      ...validPayload,
+      rating: 0,
+    })
+  );
+  await assertFails(
+    aliceDb.collection("courseReviews").doc(aliceReviewId).set({
+      ...validPayload,
+      rating: 6,
+    })
+  );
+
+  // Fails if doc ID does not match {uid}_{courseId} or userId is spoofed
+  await assertFails(
+    aliceDb.collection("courseReviews").doc("arbitrary_id").set(validPayload)
+  );
+  await assertFails(
+    aliceDb.collection("courseReviews").doc(`${BOB_UID}_course_sql_free`).set({
+      ...validPayload,
+      userId: BOB_UID,
+    })
+  );
+
+  // Fails if unexpected ghost field is supplied
+  await assertFails(
+    aliceDb.collection("courseReviews").doc(aliceReviewId).set({
+      ...validPayload,
+      verifiedPurchase: true,
+    })
+  );
+
+  // Valid create succeeds
+  await assertSucceeds(
+    aliceDb.collection("courseReviews").doc(aliceReviewId).set(validPayload)
+  );
+
+  // Both all-reviews listing (for course card averages) and per-course query succeed for signed-in users
+  await assertSucceeds(bobDb.collection("courseReviews").get());
+  await assertSucceeds(bobDb.collection("courseReviews").where("courseId", "==", "course_sql_free").get());
+
+  // Bob cannot update or delete Alice's review
+  await assertFails(
+    bobDb.collection("courseReviews").doc(aliceReviewId).update({
+      rating: 1,
+      updatedAt: nowMinus(1000),
+    })
+  );
+  await assertFails(bobDb.collection("courseReviews").doc(aliceReviewId).delete());
+
+  // Alice can update allowed mutable fields while preserving immutable fields
+  await assertSucceeds(
+    aliceDb.collection("courseReviews").doc(aliceReviewId).update({
+      rating: 4,
+      reviewText: "Updated review after completing the final exam.",
+      userName: "Alice N.",
+      updatedAt: nowMinus(1000),
+    })
+  );
+
+  // Alice cannot tamper createdAt or courseId on update
+  await assertFails(
+    aliceDb.collection("courseReviews").doc(aliceReviewId).update({
+      createdAt: nowMinus(500),
+      updatedAt: nowMinus(500),
+    })
+  );
+
+  // Alice can delete her own review
+  await assertSucceeds(aliceDb.collection("courseReviews").doc(aliceReviewId).delete());
+});
+

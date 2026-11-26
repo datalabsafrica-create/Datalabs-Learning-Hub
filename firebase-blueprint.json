@@ -383,6 +383,21 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "message", "category", "published", "createdAt"]
+    },
+    "CourseReview": {
+      "title": "CourseReview",
+      "description": "Student star rating (1-5) and text review for a course, keyed as {userId}_{courseId}. Clients must submit FieldValue.serverTimestamp() for createdAt and updatedAt.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "courseId": { "type": "string" },
+        "rating": { "type": "integer" },
+        "reviewText": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "courseId", "rating", "reviewText", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -469,6 +484,10 @@
     "/announcements/{announcementId}": {
       "schema": { "$ref": "#/entities/Announcement" },
       "description": "Platform-wide announcements."
+    },
+    "/courseReviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/CourseReview" },
+      "description": "Course star ratings and student text reviews keyed as {userId}_{courseId}."
     }
   }
 }
